@@ -105,14 +105,41 @@ function KBView({ articles, loading }) {
   )
 }
 
-function SubmitView() {
+function SubmitView({ initialDraft, onDone }) {
   const empty = { category:'Networking/Connectivity', severity:'medium', platforms:[], title:'', symptom:'', root_cause:'', steps:'', resolution:'', submitted_by:'', site_code:'', notes:'' }
-  const [form, setForm] = useState(empty)
+  const draftToForm = d => ({ ...empty, ...d, steps: Array.isArray(d.steps) ? d.steps.join('\n') : (d.steps || '') })
+  const [form, setForm] = useState(initialDraft ? draftToForm(initialDraft) : empty)
+  const [draftId, setDraftId] = useState(initialDraft ? initialDraft.id : null)
   const [submitting, setSubmitting] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [draftSaved, setDraftSaved] = useState(false)
 
   const set = (k, v) => setForm(f => ({...f, [k]: v}))
   const togglePlat = p => set('platforms', form.platforms.includes(p) ? form.platforms.filter(x => x !== p) : [...form.platforms, p])
+
+  const handleSaveDraft = async () => {
+    if (!form.title.trim()) {
+      alert('Please at least enter an Issue Title before saving as a draft.')
+      return
+    }
+    setSavingDraft(true)
+    const stepsArr = form.steps.split('\n').map(s => s.trim()).filter(Boolean)
+    const payload = { ...form, steps: stepsArr, status: 'draft' }
+    let error
+    if (draftId) {
+      ({ error } = await sb.from('kb_pending').update(payload).eq('id', draftId))
+    } else {
+      const { data, error: insErr } = await sb.from('kb_pending').insert([payload]).select()
+      error = insErr
+      if (!error && data && data[0]) setDraftId(data[0].id)
+    }
+    setSavingDraft(false)
+    if (error) { alert('Failed to save draft: ' + error.message); return }
+    setDraftSaved(true)
+    setSuccess(false)
+    onDone && onDone()
+  }
 
   const handleSubmit = async () => {
     if (!form.title||!form.symptom||!form.root_cause||!form.steps||!form.resolution||!form.submitted_by||form.platforms.length===0) {
@@ -121,19 +148,28 @@ function SubmitView() {
     }
     setSubmitting(true)
     const stepsArr = form.steps.split('\n').map(s => s.trim()).filter(Boolean)
-    const { error } = await sb.from('kb_pending').insert([{ ...form, steps: stepsArr }])
+    const payload = { ...form, steps: stepsArr, status: 'pending_review' }
+    let error
+    if (draftId) {
+      ({ error } = await sb.from('kb_pending').update(payload).eq('id', draftId))
+    } else {
+      ({ error } = await sb.from('kb_pending').insert([payload]))
+    }
     setSubmitting(false)
     if (error) { alert('Submission failed: ' + error.message); return }
     setSuccess(true)
+    setDraftSaved(false)
     setForm(empty)
+    setDraftId(null)
+    onDone && onDone()
   }
 
   return (
     <div className="main-layout">
       <div className="content">
         <div className="form-card">
-          <div className="form-title">Submit a New Case</div>
-          <div className="form-sub">Document a resolved issue for engineer review. Approved cases are added to the live KB.</div>
+          <div className="form-title">{draftId ? 'Continue Open Ticket' : 'Submit a New Case'}</div>
+          <div className="form-sub">Document a resolved issue for engineer review, or save your progress as an open ticket and finish it later. Approved cases are added to the live KB.</div>
           <div className="form-grid">
             <div className="form-group">
               <label>Category *</label>
@@ -192,12 +228,16 @@ function SubmitView() {
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Anything else useful..."/>
             </div>
           </div>
-          <div style={{marginTop:'20px'}}>
-            <button className="btn-primary" onClick={handleSubmit} disabled={submitting}>
+          <div style={{marginTop:'20px', display:'flex', gap:'10px'}}>
+            <button className="btn-primary" onClick={handleSubmit} disabled={submitting || savingDraft}>
               {submitting ? 'Submitting...' : '⚡ Submit for Review'}
+            </button>
+            <button className="btn-draft" onClick={handleSaveDraft} disabled={submitting || savingDraft}>
+              {savingDraft ? 'Saving...' : '🕓 Save as Open Ticket'}
             </button>
           </div>
           {success && <div className="success-msg">✓ Case submitted! An engineer will review it shortly.</div>}
+          {draftSaved && <div className="success-msg">✓ Saved as an open ticket. Find it under "Open Tickets" to finish later.</div>}
         </div>
       </div>
     </div>
@@ -248,6 +288,39 @@ function ReviewView({ pending, loading, onApprove, onReject }) {
   )
 }
 
+function OpenTicketsView({ drafts, loading, onEdit, onDelete }) {
+  if (loading) return <div className="main-layout"><div className="content"><div className="loading"><span className="spinner"/>Loading...</div></div></div>
+  if (drafts.length === 0) return <div className="main-layout"><div className="content"><div className="empty">No open tickets. Start a case from "Submit Case" and save it as an open ticket to come back to it later.</div></div></div>
+  return (
+    <div className="main-layout">
+      <div className="content">
+        <div style={{marginBottom:'16px', color:'var(--sub)', fontSize:'13px'}}>{drafts.length} open ticket{drafts.length!==1?'s':''} in progress — shared with the team</div>
+        {drafts.map(item => (
+          <div key={item.id} className="review-card">
+            <div className="review-header">
+              <div>
+                <div style={{fontWeight:700, fontSize:'14px', color:'var(--text)', marginBottom:'6px'}}>{item.title || '(untitled ticket)'}</div>
+                <div className="card-meta">
+                  <span className="pill cat-pill">{item.category}</span>
+                  {(item.platforms||[]).map(p => <span key={p} className="pill plat-pill">{p}</span>)}
+                </div>
+              </div>
+              <div style={{fontSize:'11px', color:'var(--sub)', textAlign:'right', flexShrink:0}}>
+                {item.submitted_by && <>By: {item.submitted_by}<br/></>}
+                {item.site_code && <>Site: {item.site_code}</>}
+              </div>
+            </div>
+            <div className="review-actions">
+              <button className="btn-approve" onClick={() => onEdit(item)}>✎ Continue Editing</button>
+              <button className="btn-reject" onClick={() => onDelete(item.id)}>✕ Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function StatsView({ articles }) {
   const byCat = CATEGORIES.filter(c => c !== 'All').map(c => ({ cat: c, count: articles.filter(a => a.category === c).length }))
   const high = articles.filter(a => a.severity === 'high').length
@@ -279,6 +352,7 @@ export default function App() {
   const [tab, setTab] = useState('kb')
   const [articles, setArticles] = useState([])
   const [pending, setPending] = useState([])
+  const [editingDraft, setEditingDraft] = useState(null)
   const [loadingArticles, setLoadingArticles] = useState(true)
   const [loadingPending, setLoadingPending] = useState(true)
 
@@ -308,6 +382,9 @@ export default function App() {
     loadPending()
   }, [])
 
+  const reviewItems = pending.filter(p => (p.status || 'pending_review') !== 'draft')
+  const draftItems = pending.filter(p => p.status === 'draft')
+
   const handleApprove = async (item) => {
     const steps = Array.isArray(item.steps) ? item.steps : JSON.parse(item.steps || '[]')
     const { error } = await sb.from('kb_articles').insert([{
@@ -328,6 +405,22 @@ export default function App() {
     await loadPending()
   }
 
+  const handleDeleteDraft = async (id) => {
+    if (!window.confirm('Delete this open ticket? This cannot be undone.')) return
+    await sb.from('kb_pending').delete().eq('id', id)
+    await loadPending()
+  }
+
+  const handleEditDraft = (item) => {
+    setEditingDraft(item)
+    setTab('submit')
+  }
+
+  const handleSubmitDone = () => {
+    setEditingDraft(null)
+    loadPending()
+  }
+
   return (
     <div className="app">
       <div className="header">
@@ -341,16 +434,20 @@ export default function App() {
         <div className="tab-bar">
           <button className={`tab ${tab==='kb'?'active':''}`} onClick={()=>setTab('kb')}>Knowledge Base</button>
           <button className={`tab ${tab==='stats'?'active':''}`} onClick={()=>setTab('stats')}>Stats</button>
-          <button className={`tab ${tab==='submit'?'active':''}`} onClick={()=>setTab('submit')}>Submit Case</button>
+          <button className={`tab ${tab==='submit'?'active':''}`} onClick={()=>{setEditingDraft(null);setTab('submit')}}>Submit Case</button>
+          <button className={`tab ${tab==='tickets'?'active':''}`} onClick={()=>{setTab('tickets');loadPending()}}>
+            Open Tickets {draftItems.length > 0 && <span className="badge">{draftItems.length}</span>}
+          </button>
           <button className={`tab ${tab==='review'?'active':''}`} onClick={()=>{setTab('review');loadPending()}}>
-            Review Queue {pending.length > 0 && <span className="badge">{pending.length}</span>}
+            Review Queue {reviewItems.length > 0 && <span className="badge">{reviewItems.length}</span>}
           </button>
         </div>
       </div>
       {tab==='kb' && <KBView articles={articles} loading={loadingArticles}/>}
       {tab==='stats' && <StatsView articles={articles}/>}
-      {tab==='submit' && <SubmitView/>}
-      {tab==='review' && <ReviewView pending={pending} loading={loadingPending} onApprove={handleApprove} onReject={handleReject}/>}
+      {tab==='submit' && <SubmitView initialDraft={editingDraft} onDone={handleSubmitDone}/>}
+      {tab==='tickets' && <OpenTicketsView drafts={draftItems} loading={loadingPending} onEdit={handleEditDraft} onDelete={handleDeleteDraft}/>}
+      {tab==='review' && <ReviewView pending={reviewItems} loading={loadingPending} onApprove={handleApprove} onReject={handleReject}/>}
     </div>
   )
 }
