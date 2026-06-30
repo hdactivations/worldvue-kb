@@ -30,7 +30,7 @@ return (
 {(item.platforms||[]).map(p => <span key={p} className="pill plat-pill">{p}</span>)}
 </div>
 </div>
-<span className={`chevron ${open ? 'open' : ''}`}>â</span>
+<span className={`chevron ${open ? 'open' : ''}`}>⌄</span>
 </div>
 {open && (
 <div className="card-detail" onClick={e => e.stopPropagation()}>
@@ -52,7 +52,7 @@ return (
 </div>
 <div className="detail-section">
 <label>Resolution</label>
-<div className="resolution-box">â {item.resolution}</div>
+<div className="resolution-box">✓ {item.resolution}</div>
 </div>
 </div>
 )}
@@ -274,14 +274,14 @@ return (
 </div>
 <div style={{marginTop:'20px', display:'flex', gap:'10px'}}>
 <button className="btn-primary" onClick={handleSubmit} disabled={submitting || savingDraft}>
-{submitting ? 'Submitting...' : isResubmit ? 'â¡ Resubmit for Review' : 'â¡ Submit for Review'}
+{submitting ? 'Submitting...' : isResubmit ? '⚡ Resubmit for Review' : '⚡ Submit for Review'}
 </button>
 <button className="btn-draft" onClick={handleSaveDraft} disabled={submitting || savingDraft}>
-{savingDraft ? 'Saving...' : 'ð Save as Open Ticket'}
+{savingDraft ? 'Saving...' : '🕓 Save as Open Ticket'}
 </button>
 </div>
-{success && <div className="success-msg">â Case submitted! An engineer will review it shortly.</div>}
-{draftSaved && <div className="success-msg">â Saved as an open ticket. Find it under "Open Tickets" to finish later.</div>}
+{success && <div className="success-msg">✓ Case submitted! An engineer will review it shortly.</div>}
+{draftSaved && <div className="success-msg">✓ Saved as an open ticket. Find it under "Open Tickets" to finish later.</div>}
 </div>
 </div>
 </div>
@@ -290,7 +290,7 @@ return (
 
 function ReviewView({ pending, loading, onApprove, onReject, onEdit }) {
 if (loading) return <div className="main-layout"><div className="content"><div className="loading"><span className="spinner"/>Loading...</div></div></div>
-if (pending.length === 0) return <div className="main-layout"><div className="content"><div className="empty">â No pending cases. Queue is clear.</div></div></div>
+if (pending.length === 0) return <div className="main-layout"><div className="content"><div className="empty">✓ No pending cases. Queue is clear.</div></div></div>
 return (
 <div className="main-layout">
 <div className="content">
@@ -322,9 +322,9 @@ By: {item.submitted_by}{item.site_code && <><br/>Site: {item.site_code}</>}
 {item.notes && <div><span className="review-label">Notes: </span><span style={{color:'var(--sub)'}}>{item.notes}</span></div>}
 </div>
 <div className="review-actions">
-<button className="btn-approve" onClick={() => onApprove(item)}>â Approve & Add to KB</button>
-<button className="btn-edit" onClick={() => onEdit(item)}>â Edit & Resubmit</button>
-<button className="btn-reject" onClick={() => onReject(item.id)}>â Reject</button>
+<button className="btn-approve" onClick={() => onApprove(item)}>✓ Approve & Add to KB</button>
+<button className="btn-edit" onClick={() => onEdit(item)}>✎ Edit & Resubmit</button>
+<button className="btn-reject" onClick={() => onReject(item.id)}>✕ Reject</button>
 </div>
 </div>
 )
@@ -340,7 +340,7 @@ if (drafts.length === 0) return <div className="main-layout"><div className="con
 return (
 <div className="main-layout">
 <div className="content">
-<div style={{marginBottom:'16px', color:'var(--sub)', fontSize:'13px'}}>{drafts.length} open ticket{drafts.length!==1?'s':''} in progress â shared with the team</div>
+<div style={{marginBottom:'16px', color:'var(--sub)', fontSize:'13px'}}>{drafts.length} open ticket{drafts.length!==1?'s':''} in progress — shared with the team</div>
 {drafts.map(item => (
 <div key={item.id} className="review-card">
 <div className="review-header">
@@ -358,8 +358,8 @@ return (
 </div>
 </div>
 <div className="review-actions">
-<button className="btn-approve" onClick={() => onEdit(item)}>â Continue Editing</button>
-<button className="btn-reject" onClick={() => onDelete(item.id)}>â Delete</button>
+<button className="btn-approve" onClick={() => onEdit(item)}>✎ Continue Editing</button>
+<button className="btn-reject" onClick={() => onDelete(item.id)}>✕ Delete</button>
 </div>
 </div>
 ))}
@@ -475,11 +475,11 @@ return (
 <img src="data:image/jpeg;base64,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" alt="Worldvue Logo" className="header-logo" />
 <div>
 <div className="header-title">ADVANCED ACTIVATIONS &amp; SUPPORT TROUBLESHOOTING KNOWLEDGE BASE</div>
-<div className="header-sub">FTG Â· OTT Â· Native Casting Â· Advanced Deployment Team</div>
+<div className="header-sub">FTG · OTT · Native Casting · Advanced Deployment Team</div>
 </div>
 </div>
 <div className="tab-bar">
-<button className="tab home-btn" onClick={()=>setTab('kb')} title="Back to Knowledge Base">ð  Home</button>
+<button className="tab home-btn" onClick={()=>setTab('kb')} title="Back to Knowledge Base">🏠 Home</button>
 <button className={`tab ${tab==='kb'?'active':''}`} onClick={()=>setTab('kb')}>Knowledge Base</button>
 <button className={`tab ${tab==='stats'?'active':''}`} onClick={()=>setTab('stats')}>Stats</button>
 <button className={`tab ${tab==='submit'?'active':''}`} onClick={()=>{setEditingDraft(null);setTab('submit')}}>Submit Case</button>
