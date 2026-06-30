@@ -8,7 +8,7 @@ const PLATFORMS = ['Platform 1','Platform 2','Custom Build']
 const TEAMS = ['Advanced Activations','Advanced Support']
 const ENGINEERS = {
   'Advanced Activations': ['Armando Rodriguez','Ahsan Alam','Charlie Whitfield III','Leonel Garcia','Tyler Boudreaux'],
-  'Advanced Support': ['Richard Wade','Tan Nguyen','Chris Esmilla','Joey de Leon','Alejandro Coyotl','DeMarea Sturdivant','Gromyko Wilson','James Shamburger','Alyssa Martin'],
+  'Advanced Support': ['Richard Wade','Tan Nguyen','Chris Esmilla','Joey de Leon','Alejandro Coyotl','DeMarea Sturdivant','Gromyko Wilson','James Shamburger','Alyssa Martin','Raymond Leonard'],
 }
 
 function SeverityPill({ sev }) {
@@ -189,6 +189,20 @@ function SubmitView({ initialDraft, onDone }) {
           <div className="form-sub">Document a resolved issue for engineer review, or save your progress as an open ticket and finish it later. Approved cases are added to the live KB.</div>
           <div className="form-grid">
             <div className="form-group">
+              <label>Team *</label>
+              <select value={form.team} onChange={e => setTeam(e.target.value)}>
+                <option value="">Select team...</option>
+                {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Engineer Opening Case *</label>
+              <select value={form.submitted_by} onChange={e => set('submitted_by', e.target.value)} disabled={!form.team}>
+                <option value="">{form.team ? 'Select engineer...' : 'Select a team first'}</option>
+                {(ENGINEERS[form.team] || []).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
               <label>Category *</label>
               <select value={form.category} onChange={e => set('category', e.target.value)}>
                 {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}
@@ -231,20 +245,6 @@ function SubmitView({ initialDraft, onDone }) {
             <div className="form-group full">
               <label>Resolution Summary *</label>
               <textarea value={form.resolution} onChange={e => set('resolution', e.target.value)} placeholder="What fixed it..."/>
-            </div>
-            <div className="form-group">
-              <label>Team *</label>
-              <select value={form.team} onChange={e => setTeam(e.target.value)}>
-                <option value="">Select team...</option>
-                {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Engineer Opening Case *</label>
-              <select value={form.submitted_by} onChange={e => set('submitted_by', e.target.value)} disabled={!form.team}>
-                <option value="">{form.team ? 'Select engineer...' : 'Select a team first'}</option>
-                {(ENGINEERS[form.team] || []).map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
             </div>
             <div className="form-group">
               <label>Site Code</label>
