@@ -24,6 +24,8 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .header-sub { font-size: 11px; color: var(--sub); }
 .tab-bar { display: flex; gap: 4px; }
 .tab { padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; background: transparent; color: var(--sub); transition: all .15s; }
+.home-btn { background: var(--entry); color: var(--text); margin-right: 6px; padding-right: 14px; border-right: 1px solid var(--border); border-radius: 6px; }
+.home-btn:hover { background: var(--border); }
 .tab.active { background: var(--accent2); color: #fff; }
 .tab:hover:not(.active) { background: var(--border); color: var(--text); }
 .badge { background: var(--red); color: #fff; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700; margin-left: 6px; }
@@ -62,6 +64,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .sev-low { background: rgba(0,229,160,.12); color: var(--green); border: 1px solid rgba(0,229,160,.3); }
 .cat-pill { background: rgba(0,114,255,.15); color: var(--accent); border: 1px solid rgba(0,114,255,.3); }
 .plat-pill { background: rgba(255,255,255,.06); color: var(--sub); border: 1px solid var(--border); }
+.team-pill { background: rgba(0,198,255,.1); color: var(--accent); border: 1px solid rgba(0,198,255,.3); font-weight: 700; }
 .chevron { color: var(--sub); font-size: 18px; flex-shrink: 0; transition: transform .2s; }
 .chevron.open { transform: rotate(180deg); }
 
