@@ -92,6 +92,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', syste
 .btn-primary { background: var(--accent2); color: #fff; border: none; border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background .15s; }
 .btn-primary:hover { background: var(--accent); }
 .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-draft { background: rgba(255,160,0,.12); color: var(--amber); border: 1px solid rgba(255,160,0,.4); border-radius: 8px; padding: 10px 24px; font-size: 14px; font-weight: 700; cursor: pointer; transition: background .15s; }
+.btn-draft:hover { background: rgba(255,160,0,.22); }
+.btn-draft:disabled { opacity: .5; cursor: not-allowed; }
 .success-msg { background: rgba(0,229,160,.1); border: 1px solid rgba(0,229,160,.3); border-radius: 8px; padding: 14px 18px; color: var(--green); font-size: 14px; margin-top: 16px; }
 
 /* Review */
