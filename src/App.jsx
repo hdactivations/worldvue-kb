@@ -250,8 +250,7 @@ function SubmitView({ initialDraft, onDone }) {
               <label>Resolution Summary *</label>
               <textarea value={form.resolution} onChange={e => set('resolution', e.target.value)} placeholder="What fixed it..."/>
             </div>
-            </div>
-            <div className="form-group full">
+                        <div className="form-group full">
               <label>Additional Notes</label>
               <textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Anything else useful..."/>
             </div>
