@@ -68,7 +68,7 @@ function KBView({ articles, loading }) {
 
   const filtered = articles.filter(a => {
     const q = search.toLowerCase()
-    const matchQ = !q || a.title.toLowerCase().includes(q) || a.symptom.toLowerCase().includes(q) || a.category.toLowerCase().includes(q)
+        const matchQ = !q || a.title.toLowerCase().includes(q) || a.symptom.toLowerCase().includes(q) || a.category.toLowerCase().includes(q) || (a.site_code||'').toLowerCase().includes(q) || (a.submitted_by||'').toLowerCase().includes(q)
     const matchC = category === 'All' || a.category === category
     const matchP = platform === 'All' || (a.platforms||[]).includes(platform)
     const matchT = team === 'All' || a.team === team
@@ -105,7 +105,7 @@ function KBView({ articles, loading }) {
       </div>
       <div className="content">
         <div className="search-wrap">
-          <input className="search-input" placeholder="Search by symptom, title, or category..." value={search} onChange={e => setSearch(e.target.value)}/>
+                    <input className="search-input" placeholder="Search by symptom, title, category, site code, or engineer..." value={search} onChange={e => setSearch(e.target.value)}/>
         </div>
         {loading ? (
           <div className="loading"><span className="spinner"/>Loading KB articles...</div>
@@ -185,7 +185,7 @@ function SubmitView({ initialDraft, onDone }) {
     <div className="main-layout">
       <div className="content">
         <div className="form-card">
-          <div className="form-title">{draftId ? 'Continue Open Ticket' : 'Submit a New Case'}</div>
+                    <div className="form-title">{draftId ? (initialDraft?.status === 'draft' ? 'Continue Open Ticket' : 'Edit Submitted Case') : 'Submit a New Case'}</div>
           <div className="form-sub">Document a resolved issue for engineer review, or save your progress as an open ticket and finish it later. Approved cases are added to the live KB.</div>
           <div className="form-grid">
             <div className="form-group">
@@ -201,6 +201,10 @@ function SubmitView({ initialDraft, onDone }) {
                 <option value="">{form.team ? 'Select engineer...' : 'Select a team first'}</option>
                                 {(ENGINEERS[form.team] || []).slice().sort().map(n => <option key={n} value={n}>{n}</option>)}
               </select>
+            </div>
+            <div className="form-group">
+              <label>Site Code</label>
+              <input value={form.site_code} onChange={e => set('site_code', e.target.value)} placeholder="e.g. C0012"/>
             </div>
             <div className="form-group">
               <label>Category *</label>
@@ -246,9 +250,6 @@ function SubmitView({ initialDraft, onDone }) {
               <label>Resolution Summary *</label>
               <textarea value={form.resolution} onChange={e => set('resolution', e.target.value)} placeholder="What fixed it..."/>
             </div>
-            <div className="form-group">
-              <label>Site Code</label>
-              <input value={form.site_code} onChange={e => set('site_code', e.target.value)} placeholder="e.g. C0012"/>
             </div>
             <div className="form-group full">
               <label>Additional Notes</label>
@@ -271,7 +272,7 @@ function SubmitView({ initialDraft, onDone }) {
   )
 }
 
-function ReviewView({ pending, loading, onApprove, onReject }) {
+function ReviewView({ pending, loading, onApprove, onReject, onEdit }) {
   if (loading) return <div className="main-layout"><div className="content"><div className="loading"><span className="spinner"/>Loading...</div></div></div>
   if (pending.length === 0) return <div className="main-layout"><div className="content"><div className="empty">✓ No pending cases. Queue is clear.</div></div></div>
   return (
@@ -306,6 +307,7 @@ function ReviewView({ pending, loading, onApprove, onReject }) {
               </div>
               <div className="review-actions">
                 <button className="btn-approve" onClick={() => onApprove(item)}>✓ Approve & Add to KB</button>
+                <button className="btn-edit" onClick={() => onEdit(item)}>✎ Edit</button>
                 <button className="btn-reject" onClick={() => onReject(item.id)}>✕ Reject</button>
               </div>
             </div>
@@ -419,7 +421,7 @@ export default function App() {
     const { error } = await sb.from('kb_articles').insert([{
       category: item.category, severity: item.severity, platforms: item.platforms, team: item.team,
       title: item.title, symptom: item.symptom, root_cause: item.root_cause,
-      steps, resolution: item.resolution, submitted_by: item.submitted_by,
+              steps, resolution: item.resolution, submitted_by: item.submitted_by, site_code: item.site_code,
       approved_by: 'Engineer', approved_at: new Date().toISOString()
     }])
     if (!error) {
@@ -468,7 +470,7 @@ export default function App() {
           <button className={`tab ${tab==='tickets'?'active':''}`} onClick={()=>{setTab('tickets');loadPending()}}>
             Open Tickets {draftItems.length > 0 && <span className="badge">{draftItems.length}</span>}
           </button>
-          <button className={`tab ${tab==='review'?'active':''}`} onClick={()=>{setTab('review');loadPending()}}>
+                          <button className={`tab ${tab==='review'?'active':''}`} onClick={()=>{setTab('review');loadPending()}}>
             Review Queue {reviewItems.length > 0 && <span className="badge">{reviewItems.length}</span>}
           </button>
         </div>
@@ -477,7 +479,7 @@ export default function App() {
       {tab==='stats' && <StatsView articles={articles}/>}
       {tab==='submit' && <SubmitView initialDraft={editingDraft} onDone={handleSubmitDone}/>}
       {tab==='tickets' && <OpenTicketsView drafts={draftItems} loading={loadingPending} onEdit={handleEditDraft} onDelete={handleDeleteDraft}/>}
-      {tab==='review' && <ReviewView pending={reviewItems} loading={loadingPending} onApprove={handleApprove} onReject={handleReject}/>}
+            {tab==='review' && <ReviewView pending={reviewItems} loading={loadingPending} onApprove={handleApprove} onReject={handleReject} onEdit={handleEditDraft}/>}
     </div>
   )
 }
