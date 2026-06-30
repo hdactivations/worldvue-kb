@@ -15,7 +15,7 @@ function SeverityPill({ sev }) {
 return <span className={`pill sev-${sev}`}>{sev.charAt(0).toUpperCase()+sev.slice(1)}</span>
 }
 
-function KBCard({ item }) {
+function KBCard({ item, onEdit }) {
 const [open, setOpen] = useState(false)
 const steps = Array.isArray(item.steps) ? item.steps : JSON.parse(item.steps || '[]')
 return (
@@ -54,13 +54,20 @@ return (
 <label>Resolution</label>
 <div className="resolution-box">✓ {item.resolution}</div>
 </div>
+{(item.submitted_by || item.site_code) && (
+<div className="detail-section submitted-by-row">
+{item.submitted_by && <span className="submitted-by-tag">👤 {item.submitted_by}</span>}
+{item.site_code && <span className="submitted-by-tag">📍 Site: {item.site_code}</span>}
+{onEdit && <button className="btn-edit-card" onClick={e => { e.stopPropagation(); onEdit(item); }}>✎ Edit Article</button>}
+</div>
+)}
 </div>
 )}
 </div>
 )
 }
 
-function KBView({ articles, loading }) {
+function KBView({ articles, loading, onEdit }) {
 const [search, setSearch] = useState('')
 const [category, setCategory] = useState('All')
 const [platform, setPlatform] = useState('All')
@@ -128,7 +135,7 @@ return (
 <div className="empty">No articles match your search.</div>
 ) : (
 <div className="card-grid">
-{filtered.map(a => <KBCard key={a.id} item={a}/>)}
+{filtered.map(a => <KBCard key={a.id} item={a} onEdit={onEdit}/>)}
 </div>
 )}
 </div>
@@ -136,17 +143,19 @@ return (
 )
 }
 
-function SubmitView({ initialDraft, onDone }) {
+function SubmitView({ initialDraft, initialArticle, onDone }) {
 const empty = { category:'Networking/Connectivity', severity:'medium', platforms:[], team:'', title:'', symptom:'', root_cause:'', steps:'', resolution:'', submitted_by:'', site_code:'', notes:'' }
 const draftToForm = d => ({ ...empty, ...d, steps: Array.isArray(d.steps) ? d.steps.join('\n') : (d.steps || '') })
-const [form, setForm] = useState(initialDraft ? draftToForm(initialDraft) : empty)
+const [form, setForm] = useState(initialArticle ? draftToForm(initialArticle) : initialDraft ? draftToForm(initialDraft) : empty)
 const [draftId, setDraftId] = useState(initialDraft ? initialDraft.id : null)
+const articleId = initialArticle ? initialArticle.id : null
 const [submitting, setSubmitting] = useState(false)
 const [savingDraft, setSavingDraft] = useState(false)
 const [success, setSuccess] = useState(false)
 const [draftSaved, setDraftSaved] = useState(false)
 
 const isResubmit = initialDraft?.status === 'pending_review'
+const isArticleEdit = !!articleId
 
 const set = (k, v) => setForm(f => ({...f, [k]: v}))
 const togglePlat = p => set('platforms', form.platforms.includes(p) ? form.platforms.filter(x => x !== p) : [...form.platforms, p])
@@ -182,12 +191,17 @@ return
 }
 setSubmitting(true)
 const stepsArr = form.steps.split('\n').map(s => s.trim()).filter(Boolean)
-const payload = { ...form, steps: stepsArr, status: 'pending_review' }
 let error
+if (articleId) {
+const { status: _s, ...articlePayload } = { ...form, steps: stepsArr }
+;({ error } = await sb.from('kb_articles').update(articlePayload).eq('id', articleId))
+} else {
+const payload = { ...form, steps: stepsArr, status: 'pending_review' }
 if (draftId) {
 ({ error } = await sb.from('kb_pending').update(payload).eq('id', draftId))
 } else {
 ({ error } = await sb.from('kb_pending').insert([payload]))
+}
 }
 setSubmitting(false)
 if (error) { alert('Submission failed: ' + error.message); return }
@@ -202,7 +216,7 @@ return (
 <div className="main-layout">
 <div className="content">
 <div className="form-card">
-<div className="form-title">{draftId ? (initialDraft?.status === 'draft' ? 'Continue Open Ticket' : 'Edit Submitted Case') : 'Submit a New Case'}</div>
+<div className="form-title">{articleId ? 'Edit KB Article' : draftId ? (initialDraft?.status === 'draft' ? 'Continue Open Ticket' : 'Edit Submitted Case') : 'Submit a New Case'}</div>
 <div className="form-sub">Document a resolved issue for engineer review, or save your progress as an open ticket and finish it later. Approved cases are added to the live KB.</div>
 <div className="form-grid">
 <div className="form-group">
@@ -274,7 +288,7 @@ return (
 </div>
 <div style={{marginTop:'20px', display:'flex', gap:'10px'}}>
 <button className="btn-primary" onClick={handleSubmit} disabled={submitting || savingDraft}>
-{submitting ? 'Submitting...' : isResubmit ? '⚡ Resubmit for Review' : '⚡ Submit for Review'}
+{submitting ? 'Saving...' : articleId ? '💾 Save Article Changes' : isResubmit ? '⚡ Resubmit for Review' : '⚡ Submit for Review'}
 </button>
 <button className="btn-draft" onClick={handleSaveDraft} disabled={submitting || savingDraft}>
 {savingDraft ? 'Saving...' : '🕓 Save as Open Ticket'}
@@ -400,6 +414,7 @@ const [tab, setTab] = useState('kb')
 const [articles, setArticles] = useState([])
 const [pending, setPending] = useState([])
 const [editingDraft, setEditingDraft] = useState(null)
+const [editingArticle, setEditingArticle] = useState(null)
 const [loadingArticles, setLoadingArticles] = useState(true)
 const [loadingPending, setLoadingPending] = useState(true)
 
@@ -458,6 +473,12 @@ await sb.from('kb_pending').delete().eq('id', id)
 await loadPending()
 }
 
+const handleEditArticle = (item) => {
+setEditingArticle(item)
+setEditingDraft(null)
+setTab('submit')
+}
+
 const handleEditDraft = (item) => {
 setEditingDraft(item)
 setTab('submit')
@@ -465,7 +486,9 @@ setTab('submit')
 
 const handleSubmitDone = () => {
 setEditingDraft(null)
+setEditingArticle(null)
 loadPending()
+loadArticles()
 }
 
 return (
@@ -491,9 +514,9 @@ Review Queue {reviewItems.length > 0 && <span className="badge">{reviewItems.len
 </button>
 </div>
 </div>
-{tab==='kb' && <KBView articles={articles} loading={loadingArticles}/>}
+{tab==='kb' && <KBView articles={articles} loading={loadingArticles} onEdit={handleEditArticle}/>}
 {tab==='stats' && <StatsView articles={articles}/>}
-{tab==='submit' && <SubmitView initialDraft={editingDraft} onDone={handleSubmitDone}/>}
+{tab==='submit' && <SubmitView initialDraft={editingDraft} initialArticle={editingArticle} onDone={handleSubmitDone}/>}
 {tab==='tickets' && <OpenTicketsView drafts={draftItems} loading={loadingPending} onEdit={handleEditDraft} onDelete={handleDeleteDraft}/>}
 {tab==='review' && <ReviewView pending={reviewItems} loading={loadingPending} onApprove={handleApprove} onReject={handleReject} onEdit={handleEditDraft}/>}
 </div>
