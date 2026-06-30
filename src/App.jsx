@@ -7,8 +7,8 @@ const CATEGORIES = ['All','Networking/Connectivity','VLAN','FTG','OTT','Native C
 const PLATFORMS = ['Platform 1','Platform 2','Custom Build']
 const TEAMS = ['Advanced Activations','Advanced Support']
 const ENGINEERS = {
-  'Advanced Activations': ['Armando Rodriguez','Ahsan Alam','Charlie Whitfield III','Leonel Garcia','Tyler Boudreaux'],
-  'Advanced Support': ['Richard Wade','Tan Nguyen','Chris Esmilla','Joey de Leon','Alejandro Coyotl','DeMarea Sturdivant','Gromyko Wilson','James Shamburger','Alyssa Martin','Raymond Leonard'],
+    'Advanced Activations': ['Ahsan Alam','Armando Rodriguez','Charlie Whitfield III','Leonel Garcia','Tyler Boudreaux'],
+    'Advanced Support': ['Alejandro Coyotl','Alyssa Martin','Chris Esmilla','DeMarea Sturdivant','Gromyko Wilson','James Shamburger','Joey de Leon','Raymond Leonard','Richard Wade','Tan Nguyen'],
 }
 
 function SeverityPill({ sev }) {
@@ -199,7 +199,7 @@ function SubmitView({ initialDraft, onDone }) {
               <label>Engineer Opening Case *</label>
               <select value={form.submitted_by} onChange={e => set('submitted_by', e.target.value)} disabled={!form.team}>
                 <option value="">{form.team ? 'Select engineer...' : 'Select a team first'}</option>
-                {(ENGINEERS[form.team] || []).map(n => <option key={n} value={n}>{n}</option>)}
+                                {(ENGINEERS[form.team] || []).slice().sort().map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
             <div className="form-group">
