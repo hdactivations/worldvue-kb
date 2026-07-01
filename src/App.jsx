@@ -28,6 +28,7 @@ return (
 <span className="pill cat-pill">{item.category}</span>
 {item.team && <span className="pill team-pill">{item.team}</span>}
 {(item.platforms||[]).map(p => <span key={p} className="pill plat-pill">{p}</span>)}
+{item.site_code && <span className="pill site-pill">📍 {item.site_code}</span>}
 </div>
 </div>
 <span className={`chevron ${open ? 'open' : ''}`}>⌄</span>
@@ -193,7 +194,7 @@ setSubmitting(true)
 const stepsArr = form.steps.split('\n').map(s => s.trim()).filter(Boolean)
 let error
 if (articleId) {
-const { status: _s, ...articlePayload } = { ...form, steps: stepsArr }
+const { status: _s, notes: _n, ...articlePayload } = { ...form, steps: stepsArr }
 ;({ error } = await sb.from('kb_articles').update(articlePayload).eq('id', articleId))
 } else {
 const payload = { ...form, steps: stepsArr, status: 'pending_review' }
