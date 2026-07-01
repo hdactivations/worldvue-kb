@@ -85,8 +85,8 @@ const matchQ = !q || a.title.toLowerCase().includes(q) || a.symptom.toLowerCase(
 const matchC = category === 'All' || a.category === category
 const matchP = platform === 'All' || (a.platforms||[]).includes(platform)
 const matchT = team === 'All' || a.team === team
-const matchSC = siteCodeFilter === 'All' || a.site_code === siteCodeFilter
-const matchEng = engineerFilter === 'All' || a.submitted_by === engineerFilter
+const matchSC = siteCodeFilter === 'All' || !a.site_code || a.site_code === siteCodeFilter
+const matchEng = engineerFilter === 'All' || !a.submitted_by || a.submitted_by === engineerFilter
 return matchQ && matchC && matchP && matchT && matchSC && matchEng
 })
 
