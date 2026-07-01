@@ -486,10 +486,14 @@ setTab('submit')
 }
 
 const handleSubmitDone = () => {
+const wasArticleEdit = !!editingArticle
 setEditingDraft(null)
 setEditingArticle(null)
 loadPending()
+if (wasArticleEdit) {
 loadArticles()
+setTab('kb')
+}
 }
 
 return (
